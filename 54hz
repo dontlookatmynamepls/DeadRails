@@ -237,6 +237,64 @@ end)
 local Label = Tab:CreateLabel("Misc", 4483362458, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
 
 local Toggle = Tab:CreateToggle({
+   Name = "Aimbot V1",
+   CurrentValue = false,
+   Flag = "2", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+getgenv().aimbotEnabled = Value  -- Mặc định tắt
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local camera = Workspace.CurrentCamera
+local player = Players.LocalPlayer
+
+local function getClosestNPCTarget()
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+
+    local closestNPCHead = nil
+    local shortestDistance = math.huge
+
+    for _, npc in ipairs(Workspace:GetDescendants()) do
+        if npc:IsA("Model") and npc:FindFirstChild("Humanoid") and npc:FindFirstChild("Head") and not Players:GetPlayerFromCharacter(npc) then
+            local humanoid = npc.Humanoid
+            local head = npc.Head
+            local distance = (head.Position - character.HumanoidRootPart.Position).Magnitude
+
+            if humanoid.Health > 0 and distance < shortestDistance and distance <= 300 then
+                shortestDistance = distance
+                closestNPCHead = head
+            end
+        end
+    end
+
+    return closestNPCHead
+end
+
+spawn(function()
+    while true do
+        if getgenv().aimbotEnabled then
+            local targetHead = getClosestNPCTarget()
+            if targetHead then
+                local headPos = targetHead.Position + Vector3.new(0, targetHead.Size.Y / 2, 0)
+                local camPos = camera.CFrame.Position
+                local direction = (headPos - camPos).unit
+                camera.CFrame = CFrame.lookAt(camPos, camPos + direction)
+            end
+        end
+        wait()  -- Giảm tải CPU
+    end
+end)
+
+   -- The function that takes place when the toggle is pressed
+   -- The variable (Value) is a boolean on whether the toggle is true or false
+   end,
+})
+
+local Toggle = Tab:CreateToggle({
    Name = "Aimbot V2",
    CurrentValue = false,
    Flag = "Toggle3", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
@@ -308,6 +366,7 @@ getgenv().hitboxEnabled = Value  -- Mặc định tắt
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local defaultHRPValues = {}
 
@@ -315,24 +374,40 @@ local function updateNPCHitbox(npc)
     if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("Humanoid") then
         if Players:GetPlayerFromCharacter(npc) then return end  -- Bỏ qua người chơi
 
+        local humanoid = npc.Humanoid
         local hrp = npc.HumanoidRootPart
 
         if not defaultHRPValues[hrp] then
             defaultHRPValues[hrp] = {Size = hrp.Size, Transparency = hrp.Transparency, CanCollide = hrp.CanCollide}
         end
 
-        if getgenv().hitboxEnabled then
-            hrp.Size = Vector3.new(10, 10, 10)
-            hrp.Transparency = 0.85
-            hrp.CanCollide = false
-        else
-            local defaults = defaultHRPValues[hrp]
-            if defaults then
-                hrp.Size = defaults.Size
-                hrp.Transparency = defaults.Transparency
-                hrp.CanCollide = defaults.CanCollide
+        local function updateHitbox()
+            if getgenv().hitboxEnabled and humanoid.Health > 0 then
+                hrp.Size = Vector3.new(10, 10, 10)
+                hrp.Transparency = 0.85
+                hrp.CanCollide = false
+            else
+                local defaults = defaultHRPValues[hrp]
+                if defaults then
+                    hrp.Size = defaults.Size
+                    hrp.Transparency = defaults.Transparency
+                    hrp.CanCollide = defaults.CanCollide
+                end
             end
         end
+
+        humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+            if humanoid.Health <= 0 then
+                local defaults = defaultHRPValues[hrp]
+                if defaults then
+                    hrp.Size = defaults.Size
+                    hrp.Transparency = defaults.Transparency
+                    hrp.CanCollide = defaults.CanCollide
+                end
+            end
+        end)
+
+        updateHitbox()
     end
 end
 
