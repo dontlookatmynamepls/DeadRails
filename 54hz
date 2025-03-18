@@ -43,23 +43,50 @@ Rayfield:Notify({
 
 local Tab = Window:CreateTab("Main🤔", 4483362458) -- Title, Image
 
+local Divider = Tab:CreateDivider()
+
 local Button = Tab:CreateButton({
    Name = "ESP ITEM",
    Callback = function()
--- ESP Item
-getgenv().ESPEnabled = false -- Mặc định tắt
+-- Tạo GUI cho ESP Item
+local screenGui = game:GetService("CoreGui"):FindFirstChild("ESP_Item_GUI") or Instance.new("ScreenGui")
+screenGui.Name = "ESP_Item_GUI"
+screenGui.Parent = game:GetService("CoreGui")
 
-local espObjects = {} -- Danh sách các đối tượng ESP để xóa khi cần
+local buttonESP = Instance.new("TextButton")
+buttonESP.Name = "ESP Item: ON/OFF"
+buttonESP.Size = UDim2.new(0, 150, 0, 50)
+buttonESP.Position = UDim2.new(0.5, -75, 0.8, -25) -- Vị trí dưới NPC Lock
+buttonESP.BackgroundColor3 = Color3.new(0, 0, 0)
+buttonESP.TextColor3 = Color3.new(1, 1, 1)
+buttonESP.Text = "ESP Item: OFF"
+buttonESP.Font = Enum.Font.Fantasy
+buttonESP.TextScaled = true
+buttonESP.Parent = screenGui
+
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = buttonESP
+
+-- Biến lưu trạng thái ESP
+getgenv().ESPEnabled = false
+local espObjects = {}
+
+local function clearESP()
+    for _, esp in pairs(espObjects) do
+        if esp and esp.Parent then
+            esp:Destroy()
+        end
+    end
+    espObjects = {}
+end
 
 local function createESP(obj)
     if obj:FindFirstChild("ObjectInfo") and not obj:FindFirstChild("HumanoidRootPart") then
-        local highlightColor = Color3.fromRGB(255, 255, 255)
-        local textColor = Color3.fromRGB(255, 255, 255)
-
         local highlight = Instance.new("Highlight")
         highlight.Parent = obj
-        highlight.FillColor = highlightColor
-        highlight.OutlineColor = highlightColor
+        highlight.FillColor = Color3.new(1, 1, 1)
+        highlight.OutlineColor = Color3.new(1, 1, 1)
         highlight.FillTransparency = 0.5
         highlight.OutlineTransparency = 0
 
@@ -74,8 +101,7 @@ local function createESP(obj)
         textLabel.Size = UDim2.new(1, 0, 1, 0)
         textLabel.BackgroundTransparency = 1
         textLabel.Text = obj.Name
-        textLabel.TextColor3 = textColor
-        textLabel.TextScaled = false
+        textLabel.TextColor3 = Color3.new(1, 1, 1)
         textLabel.TextSize = 10
         textLabel.Font = Enum.Font.SourceSansBold
 
@@ -91,6 +117,57 @@ local function createESP(obj)
     end
 end
 
+local function updateESP()
+    while getgenv().ESPEnabled do
+        clearESP()
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") then
+                createESP(obj)
+            end
+        end
+        task.wait(0.2)
+    end
+    clearESP()
+end
+
+buttonESP.MouseButton1Click:Connect(function()
+    getgenv().ESPEnabled = not getgenv().ESPEnabled
+    buttonESP.Text = getgenv().ESPEnabled and "ESP Item: ON" or "ESP Item: OFF"
+
+    if getgenv().ESPEnabled then
+        task.spawn(updateESP)
+    end
+end)
+
+})
+
+local Button = Tab:CreateButton({
+   Name = "ESP NPC",
+   Callback = function()
+-- Tạo GUI cho ESP NPC
+local screenGui = game:GetService("CoreGui"):FindFirstChild("ESP_NPC_GUI") or Instance.new("ScreenGui")
+screenGui.Name = "ESP_NPC_GUI"
+screenGui.Parent = game:GetService("CoreGui")
+
+local buttonESP = Instance.new("TextButton")
+buttonESP.Name = "ESP NPC: ON/OFF"
+buttonESP.Size = UDim2.new(0, 150, 0, 50)
+buttonESP.Position = UDim2.new(0.5, -75, 0.7, -25) -- Vị trí dưới ESP Item
+buttonESP.BackgroundColor3 = Color3.new(0, 0, 0)
+buttonESP.TextColor3 = Color3.new(1, 1, 1)
+buttonESP.Text = "ESP NPC: OFF"
+buttonESP.Font = Enum.Font.Fantasy
+buttonESP.TextScaled = true
+buttonESP.Parent = screenGui
+
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = buttonESP
+
+-- Biến lưu trạng thái ESP
+getgenv().ESPEnabled = false
+local espObjects = {}
+
 local function clearESP()
     for _, esp in pairs(espObjects) do
         if esp and esp.Parent then
@@ -99,98 +176,6 @@ local function clearESP()
     end
     espObjects = {}
 end
-
-task.spawn(function()
-    while task.wait(0.2) do
-        if getgenv().ESPEnabled then
-            clearESP()
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj:IsA("Model") then
-                    createESP(obj)
-                end
-            end
-        else
-            clearESP()
-        end
-    end
-end)
-
--- Tạo GUI với nút bấm
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ESP_GUI"
-screenGui.Parent = game:GetService("CoreGui")
-
-local button = Instance.new("TextButton")
-button.Name = "ESP_Button"
-button.Size = UDim2.new(0, 150, 0, 50)
-button.Position = UDim2.new(0.5, -75, 0.9, -25)
-button.BackgroundColor3 = Color3.new(0, 0, 0)
-button.TextColor3 = Color3.new(1, 1, 1)
-button.Text = "ESP ITEM: OFF"
-button.Font = Enum.Font.Fantasy
-button.TextScaled = true
-button.TextSize = 20
-button.Parent = screenGui
-
-local uicorner = Instance.new("UICorner")
-uicorner.CornerRadius = UDim.new(0, 12)
-uicorner.Parent = button
-
-local dragging = false
-local dragInput, dragStart, startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-button.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = button.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-button.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if dragging and input == dragInput then
-        update(input)
-    end
-end)
-
-button.MouseButton1Click:Connect(function()
-    getgenv().ESPEnabled = not getgenv().ESPEnabled
-    if getgenv().ESPEnabled then
-        button.Text = "ESP ITEM: ON"
-    else
-        button.Text = "ESP ITEM: OFF"
-        clearESP()
-    end
-end)
-
-   -- The function that takes place when the button is pressed
-   end,
-})
-
-local Button = Tab:CreateButton({
-   Name = "ESP NPC",
-   Callback = function()
--- ESP Mob
-getgenv().ESPEnabled = false -- Mặc định tắt
-
-local espObjects = {}
 
 local function createESP(obj)
     if obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
@@ -202,14 +187,14 @@ local function createESP(obj)
         local highlightColor, textColor
 
         if table.find(dangerousMobs, obj.Name) then
-            highlightColor = Color3.fromRGB(255, 0, 0)
-            textColor = Color3.fromRGB(255, 0, 0)
+            highlightColor = Color3.fromRGB(255, 0, 0) -- Đỏ
+            textColor = Color3.fromRGB(255, 0, 0) -- Đỏ
         elseif obj.Name == "Banker" then
-            highlightColor = Color3.fromRGB(255, 255, 0)
-            textColor = Color3.fromRGB(255, 255, 0)
+            highlightColor = Color3.fromRGB(255, 255, 0) -- Vàng
+            textColor = Color3.fromRGB(255, 255, 0) -- Vàng
         else
-            highlightColor = Color3.fromRGB(0, 255, 0)
-            textColor = Color3.fromRGB(0, 255, 0)
+            highlightColor = Color3.fromRGB(0, 255, 0) -- Xanh lá
+            textColor = Color3.fromRGB(0, 255, 0) -- Xanh lá
         end
 
         local highlight = Instance.new("Highlight")
@@ -232,7 +217,6 @@ local function createESP(obj)
         textLabel.BackgroundTransparency = 1
         textLabel.Text = obj.Name
         textLabel.TextColor3 = textColor
-        textLabel.TextScaled = false
         textLabel.TextSize = 14
         textLabel.Font = Enum.Font.SourceSansBold
 
@@ -241,156 +225,85 @@ local function createESP(obj)
     end
 end
 
-local function clearESP()
-    for _, esp in pairs(espObjects) do
-        if esp and esp.Parent then
-            esp:Destroy()
-        end
-    end
-    espObjects = {}
-end
-
-task.spawn(function()
-    while task.wait(0.2) do
-        if getgenv().ESPEnabled then
-            clearESP()
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
-                    createESP(obj)
-                end
-            end
-        else
-            clearESP()
-        end
-    end
-end)
-
--- Tạo GUI với nút bấm
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ESP_Mob_GUI"
-screenGui.Parent = game:GetService("CoreGui")
-
-local button = Instance.new("TextButton")
-button.Name = "ESP_Mob_Button"
-button.Size = UDim2.new(0, 150, 0, 50)
-button.Position = UDim2.new(0.5, -75, 0.8, -25)
-button.BackgroundColor3 = Color3.new(0, 0, 0)
-button.TextColor3 = Color3.new(1, 1, 1)
-button.Text = "ESP Mob: OFF"
-button.Font = Enum.Font.Fantasy
-button.TextScaled = true
-button.TextSize = 20
-button.Parent = screenGui
-
-local uicorner = Instance.new("UICorner")
-uicorner.CornerRadius = UDim.new(0, 12)
-uicorner.Parent = button
-
-local dragging = false
-local dragInput, dragStart, startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-button.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = button.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-button.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if dragging and input == dragInput then
-        update(input)
-    end
-end)
-
-button.MouseButton1Click:Connect(function()
-    getgenv().ESPEnabled = not getgenv().ESPEnabled
-    if getgenv().ESPEnabled then
-        button.Text = "ESP Mob: ON"
-    else
-        button.Text = "ESP Mob: OFF"
+local function updateESP()
+    while getgenv().ESPEnabled do
         clearESP()
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+                createESP(obj)
+            end
+        end
+        task.wait(0.2)
+    end
+    clearESP()
+end
+
+buttonESP.MouseButton1Click:Connect(function()
+    getgenv().ESPEnabled = not getgenv().ESPEnabled
+    buttonESP.Text = getgenv().ESPEnabled and "ESP NPC: ON" or "ESP NPC: OFF"
+
+    if getgenv().ESPEnabled then
+        task.spawn(updateESP)
     end
 end)
 
-
-   -- The function that takes place when the button is pressed
-   end,
 })
 
 local Button = Tab:CreateButton({
    Name = "NPC HITBOX",
    Callback = function()
--- Tạo GUI chính
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "Hitbox_GUI"
+-- Tạo GUI cho NPC Hitbox
+local screenGui = game:GetService("CoreGui"):FindFirstChild("NPC_HITBOX_GUI") or Instance.new("ScreenGui")
+screenGui.Name = "NPC_HITBOX_GUI"
 screenGui.Parent = game:GetService("CoreGui")
 
--- Tạo nút bấm
-local button = Instance.new("TextButton")
-button.Size = UDim2.new(0, 150, 0, 50)
-button.Position = UDim2.new(0.5, -75, 0.9, -25)
-button.BackgroundColor3 = Color3.new(0, 0, 0)
-button.TextColor3 = Color3.new(1, 1, 1)
-button.Text = "Hitbox: OFF"
-button.Font = Enum.Font.Fantasy
-button.TextScaled = true
-button.Parent = screenGui
+local buttonHitbox = Instance.new("TextButton")
+buttonHitbox.Name = "NPC HITBOX: ON/OFF"
+buttonHitbox.Size = UDim2.new(0, 150, 0, 50)
+buttonHitbox.Position = UDim2.new(0.5, -75, 0.8, -25) -- Vị trí dưới ESP NPC
+buttonHitbox.BackgroundColor3 = Color3.new(0, 0, 0)
+buttonHitbox.TextColor3 = Color3.new(1, 1, 1)
+buttonHitbox.Text = "NPC HITBOX: OFF"
+buttonHitbox.Font = Enum.Font.Fantasy
+buttonHitbox.TextScaled = true
+buttonHitbox.Parent = screenGui
 
--- Bo tròn góc
 local uicorner = Instance.new("UICorner")
 uicorner.CornerRadius = UDim.new(0, 12)
-uicorner.Parent = button
+uicorner.Parent = buttonHitbox
 
--- Biến kiểm soát Hitbox
+-- Biến lưu trạng thái Hitbox
 getgenv().hitboxEnabled = false
 
--- Cập nhật Hitbox NPC
+-- Hàm cập nhật hitbox cho NPC
 local function updateNPCHitbox(npc)
     if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("Humanoid") then
         local hrp = npc.HumanoidRootPart
         if getgenv().hitboxEnabled then
-            hrp.Size = Vector3.new(10, 10, 10)
+            hrp.Size = Vector3.new(10, 10, 10) -- Mở rộng hitbox
             hrp.Transparency = 0.85
             hrp.CanCollide = false
         else
-            hrp.Size = Vector3.new(2, 2, 1) -- Kích thước mặc định
+            hrp.Size = Vector3.new(2, 2, 1) -- Kích thước gốc
             hrp.Transparency = 0
             hrp.CanCollide = true
         end
     end
 end
 
--- Cập nhật tất cả NPC
+-- Cập nhật tất cả NPC hiện có
 local function updateAllNPCsHitbox()
     for _, obj in ipairs(workspace:GetDescendants()) do
         updateNPCHitbox(obj)
     end
 end
 
--- Tự động cập nhật khi có NPC mới
+-- Khi có NPC mới xuất hiện, tự động cập nhật hitbox
 workspace.DescendantAdded:Connect(function(obj)
     updateNPCHitbox(obj)
 end)
 
--- Kiểm tra liên tục mỗi giây
+-- Liên tục kiểm tra và cập nhật hitbox
 spawn(function()
     while true do
         if getgenv().hitboxEnabled then
@@ -400,15 +313,13 @@ spawn(function()
     end
 end)
 
--- Xử lý khi bấm nút
-button.MouseButton1Click:Connect(function()
+-- Nút bật/tắt Hitbox
+buttonHitbox.MouseButton1Click:Connect(function()
     getgenv().hitboxEnabled = not getgenv().hitboxEnabled
-    button.Text = "Hitbox: " .. (getgenv().hitboxEnabled and "ON" or "OFF")
+    buttonHitbox.Text = getgenv().hitboxEnabled and "NPC HITBOX: ON" or "NPC HITBOX: OFF"
     updateAllNPCsHitbox()
 end)
 
-   -- The function that takes place when the button is pressed
-   end,
 })
 
 local Button = Tab:CreateButton({
