@@ -44,7 +44,7 @@ Rayfield:Notify({
 local Tab = Window:CreateTab("Main🤔", 4483362458) -- Title, Image
 
 local Button = Tab:CreateButton({
-   Name = "Esp Item",
+   Name = "ESP ITEM",
    Callback = function()
 -- ESP Item
 getgenv().ESPEnabled = false -- Mặc định tắt
@@ -180,8 +180,12 @@ button.MouseButton1Click:Connect(function()
     end
 end)
 
+   -- The function that takes place when the button is pressed
+   end,
+})
+
 local Button = Tab:CreateButton({
-   Name = "Esp Npc",
+   Name = "ESP NPC",
    Callback = function()
 -- ESP Mob
 getgenv().ESPEnabled = false -- Mặc định tắt
@@ -326,8 +330,13 @@ button.MouseButton1Click:Connect(function()
     end
 end)
 
+
+   -- The function that takes place when the button is pressed
+   end,
+})
+
 local Button = Tab:CreateButton({
-   Name = "Npc Hitbox",
+   Name = "NPC HITBOX",
    Callback = function()
 -- Tạo GUI chính
 local screenGui = Instance.new("ScreenGui")
@@ -398,8 +407,12 @@ button.MouseButton1Click:Connect(function()
     updateAllNPCsHitbox()
 end)
 
+   -- The function that takes place when the button is pressed
+   end,
+})
+
 local Button = Tab:CreateButton({
-   Name = "Aimbot V3",
+   Name = "AIMBOT V3",
    Callback = function()
 --dead rails wall hack aimbot.
 local Players = game:GetService("Players")
@@ -568,17 +581,6 @@ button.MouseButton1Click:Connect(function()
         end
     end
 end)
-   -- The function that takes place when the button is pressed
-   end,
-})
-
-   -- The function that takes place when the button is pressed
-   end,
-})
-
-   -- The function that takes place when the button is pressed
-   end,
-})
 
    -- The function that takes place when the button is pressed
    end,
