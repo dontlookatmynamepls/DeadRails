@@ -274,18 +274,15 @@ local function getClosestNPCTarget()
     return closestNPCHead
 end
 
-spawn(function()
-    while true do
-        if getgenv().aimbotEnabled then
-            local targetHead = getClosestNPCTarget()
-            if targetHead then
-                local headPos = targetHead.Position + Vector3.new(0, targetHead.Size.Y / 2, 0)
-                local camPos = camera.CFrame.Position
-                local direction = (headPos - camPos).unit
-                camera.CFrame = CFrame.lookAt(camPos, camPos + direction)
-            end
+RunService.RenderStepped:Connect(function()
+    if getgenv().aimbotEnabled then
+        local targetHead = getClosestNPCTarget()
+        if targetHead then
+            local headPos = targetHead.Position + Vector3.new(0, targetHead.Size.Y / 2, 0)
+            local camPos = camera.CFrame.Position
+            local newCFrame = CFrame.lookAt(camPos, headPos)
+            camera.CFrame = newCFrame
         end
-        wait()  -- Giảm tải CPU
     end
 end)
 
