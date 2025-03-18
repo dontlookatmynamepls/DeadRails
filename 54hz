@@ -43,43 +43,19 @@ Rayfield:Notify({
 
 local Tab = Window:CreateTab("Main🤔", 4483362458) -- Title, Image
 
-local Divider = Tab:CreateDivider()
+local Button = Tab:CreateButton({
+   Name = "Esp Item",
+   Callback = function()
+-- ESP Item
+getgenv().ESPEnabled = false -- Mặc định tắt
 
-local Label = Tab:CreateLabel("Esp", 4483362458, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
-
-local Toggle = Tab:CreateToggle({
-   Name = "Esp Npc",
-   CurrentValue = false,
-   Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
-   Callback = function(Value)
--- ESP Mob
-
-getgenv().ESPEnabled = Value -- Bật/tắt ESP
-
-local espObjects = {} -- Lưu danh sách ESP để xóa khi cần
+local espObjects = {} -- Danh sách các đối tượng ESP để xóa khi cần
 
 local function createESP(obj)
-    if obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
-        -- Xác định màu dựa trên tên mob
-        local dangerousMobs = {
-            "Vampire", "Werewolf", 
-            "RifleOutlaw", "ShotgunOutlaw", "RevolverOutlaw"
-        }
-        
-        local highlightColor, textColor
+    if obj:FindFirstChild("ObjectInfo") and not obj:FindFirstChild("HumanoidRootPart") then
+        local highlightColor = Color3.fromRGB(255, 255, 255)
+        local textColor = Color3.fromRGB(255, 255, 255)
 
-        if table.find(dangerousMobs, obj.Name) then
-            highlightColor = Color3.fromRGB(255, 0, 0) -- Đỏ
-            textColor = Color3.fromRGB(255, 0, 0) -- Đỏ
-        elseif obj.Name == "Banker" then
-            highlightColor = Color3.fromRGB(255, 255, 0) -- Vàng
-            textColor = Color3.fromRGB(255, 255, 0) -- Vàng
-        else
-            highlightColor = Color3.fromRGB(0, 255, 0) -- Xanh lá
-            textColor = Color3.fromRGB(0, 255, 0) -- Xanh lá
-        end
-
-        -- Tạo highlight
         local highlight = Instance.new("Highlight")
         highlight.Parent = obj
         highlight.FillColor = highlightColor
@@ -87,15 +63,165 @@ local function createESP(obj)
         highlight.FillTransparency = 0.5
         highlight.OutlineTransparency = 0
 
-        -- Tạo BillboardGui để hiển thị tên mob
         local billboard = Instance.new("BillboardGui")
-        billboard.Parent = obj.HumanoidRootPart
-        billboard.Adornee = obj.HumanoidRootPart
-        billboard.Size = UDim2.new(0, 100, 0, 25) -- Giảm kích thước của bảng hiển thị
+        billboard.Parent = obj
+        billboard.Size = UDim2.new(0, 100, 0, 20)
         billboard.StudsOffset = Vector3.new(0, 3, 0)
         billboard.AlwaysOnTop = true
 
-        -- Tạo TextLabel để hiển thị tên mob
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Parent = billboard
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = obj.Name
+        textLabel.TextColor3 = textColor
+        textLabel.TextScaled = false
+        textLabel.TextSize = 10
+        textLabel.Font = Enum.Font.SourceSansBold
+
+        local adorneePart = obj:FindFirstChildWhichIsA("BasePart")
+        if adorneePart then
+            billboard.Adornee = adorneePart
+        else
+            billboard:Destroy()
+        end
+
+        table.insert(espObjects, highlight)
+        table.insert(espObjects, billboard)
+    end
+end
+
+local function clearESP()
+    for _, esp in pairs(espObjects) do
+        if esp and esp.Parent then
+            esp:Destroy()
+        end
+    end
+    espObjects = {}
+end
+
+task.spawn(function()
+    while task.wait(0.2) do
+        if getgenv().ESPEnabled then
+            clearESP()
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") then
+                    createESP(obj)
+                end
+            end
+        else
+            clearESP()
+        end
+    end
+end)
+
+-- Tạo GUI với nút bấm
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ESP_GUI"
+screenGui.Parent = game:GetService("CoreGui")
+
+local button = Instance.new("TextButton")
+button.Name = "ESP_Button"
+button.Size = UDim2.new(0, 150, 0, 50)
+button.Position = UDim2.new(0.5, -75, 0.9, -25)
+button.BackgroundColor3 = Color3.new(0, 0, 0)
+button.TextColor3 = Color3.new(1, 1, 1)
+button.Text = "ESP ITEM: OFF"
+button.Font = Enum.Font.Fantasy
+button.TextScaled = true
+button.TextSize = 20
+button.Parent = screenGui
+
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = button
+
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = button.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+button.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        update(input)
+    end
+end)
+
+button.MouseButton1Click:Connect(function()
+    getgenv().ESPEnabled = not getgenv().ESPEnabled
+    if getgenv().ESPEnabled then
+        button.Text = "ESP ITEM: ON"
+    else
+        button.Text = "ESP ITEM: OFF"
+        clearESP()
+    end
+end)
+
+local Button = Tab:CreateButton({
+   Name = "Esp Npc",
+   Callback = function()
+-- ESP Mob
+getgenv().ESPEnabled = false -- Mặc định tắt
+
+local espObjects = {}
+
+local function createESP(obj)
+    if obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
+        local dangerousMobs = {
+            "Vampire", "Werewolf", 
+            "RifleOutlaw", "ShotgunOutlaw", "RevolverOutlaw"
+        }
+
+        local highlightColor, textColor
+
+        if table.find(dangerousMobs, obj.Name) then
+            highlightColor = Color3.fromRGB(255, 0, 0)
+            textColor = Color3.fromRGB(255, 0, 0)
+        elseif obj.Name == "Banker" then
+            highlightColor = Color3.fromRGB(255, 255, 0)
+            textColor = Color3.fromRGB(255, 255, 0)
+        else
+            highlightColor = Color3.fromRGB(0, 255, 0)
+            textColor = Color3.fromRGB(0, 255, 0)
+        end
+
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = obj
+        highlight.FillColor = highlightColor
+        highlight.OutlineColor = highlightColor
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+
+        local billboard = Instance.new("BillboardGui")
+        billboard.Parent = obj.HumanoidRootPart
+        billboard.Adornee = obj.HumanoidRootPart
+        billboard.Size = UDim2.new(0, 100, 0, 25)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+
         local textLabel = Instance.new("TextLabel")
         textLabel.Parent = billboard
         textLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -106,7 +232,6 @@ local function createESP(obj)
         textLabel.TextSize = 14
         textLabel.Font = Enum.Font.SourceSansBold
 
-        -- Lưu ESP để có thể xóa sau này
         table.insert(espObjects, highlight)
         table.insert(espObjects, billboard)
     end
@@ -121,187 +246,253 @@ local function clearESP()
     espObjects = {}
 end
 
--- Chạy lặp ESP mỗi 0.2 giây
 task.spawn(function()
     while task.wait(0.2) do
-        if not getgenv().ESPEnabled then
+        if getgenv().ESPEnabled then
             clearESP()
-            break
-        end
-
-        clearESP() -- Xóa ESP cũ trước khi tạo lại
-
-        -- Áp dụng ESP cho tất cả mob trong game
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
-                createESP(obj)
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+                    createESP(obj)
+                end
             end
-        end
-    end
-end)
-
-   -- The function that takes place when the toggle is pressed
-   -- The variable (Value) is a boolean on whether the toggle is true or false
-   end,
-})
-
-local Toggle = Tab:CreateToggle({
-   Name = "Esp item",
-   CurrentValue = false,
-   Flag = "Toggle2", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
-   Callback = function(Value)
--- ESP Item
-getgenv().ESPEnabled = Value -- Bật/tắt hiển thị
-
-local espObjects = {} -- Danh sách các đối tượng ESP để xóa khi cần
-
-local function createESP(obj)
-    -- Chỉ áp dụng nếu obj có "ObjectInfo" và không có "HumanoidRootPart"
-    if obj:FindFirstChild("ObjectInfo") and not obj:FindFirstChild("HumanoidRootPart") then
-        local highlightColor = Color3.fromRGB(255, 255, 255) -- Màu trắng
-        local textColor = Color3.fromRGB(255, 255, 255) -- Màu trắng
-
-        -- Tạo highlight
-        local highlight = Instance.new("Highlight")
-        highlight.Parent = obj
-        highlight.FillColor = highlightColor
-        highlight.OutlineColor = highlightColor
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0
-
-        -- Tạo BillboardGui để hiển thị tên vật phẩm
-        local billboard = Instance.new("BillboardGui")
-        billboard.Parent = obj
-        billboard.Size = UDim2.new(0, 100, 0, 20) -- Giảm kích thước
-        billboard.StudsOffset = Vector3.new(0, 3, 0)
-        billboard.AlwaysOnTop = true
-
-        -- Tạo TextLabel để hiển thị tên vật phẩm
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Parent = billboard
-        textLabel.Size = UDim2.new(1, 0, 1, 0)
-        textLabel.BackgroundTransparency = 1
-        textLabel.Text = obj.Name
-        textLabel.TextColor3 = textColor
-        textLabel.TextScaled = false
-        textLabel.TextSize = 10 -- Giảm cỡ chữ
-        textLabel.Font = Enum.Font.SourceSansBold
-
-        -- Gán BillboardGui vào một phần thích hợp (ví dụ: phần tử đầu tiên)
-        local adorneePart = obj:FindFirstChildWhichIsA("BasePart")
-        if adorneePart then
-            billboard.Adornee = adorneePart
         else
-            billboard:Destroy() -- Nếu không tìm thấy phần thích hợp, xóa Billboard
-        end
-
-        -- Lưu ESP để có thể xóa sau này
-        table.insert(espObjects, highlight)
-        table.insert(espObjects, billboard)
-    end
-end
-
-local function clearESP()
-    for _, esp in pairs(espObjects) do
-        if esp and esp.Parent then
-            esp:Destroy()
-        end
-    end
-    espObjects = {}
-end
-
--- Chạy lặp kiểm tra mỗi 0.2 giây
-task.spawn(function()
-    while task.wait(0.2) do
-        if not getgenv().ESPEnabled then
             clearESP()
-            break
-        end
-
-        clearESP() -- Xóa highlight cũ trước khi tạo lại
-
-        -- Áp dụng cho tất cả các vật phẩm trong game
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") then
-                createESP(obj)
-            end
         end
     end
 end)
 
-   -- The function that takes place when the toggle is pressed
-   -- The variable (Value) is a boolean on whether the toggle is true or false
-   end,
-})
+-- Tạo GUI với nút bấm
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ESP_Mob_GUI"
+screenGui.Parent = game:GetService("CoreGui")
 
-local Label = Tab:CreateLabel("Misc", 4483362458, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+local button = Instance.new("TextButton")
+button.Name = "ESP_Mob_Button"
+button.Size = UDim2.new(0, 150, 0, 50)
+button.Position = UDim2.new(0.5, -75, 0.8, -25)
+button.BackgroundColor3 = Color3.new(0, 0, 0)
+button.TextColor3 = Color3.new(1, 1, 1)
+button.Text = "ESP Mob: OFF"
+button.Font = Enum.Font.Fantasy
+button.TextScaled = true
+button.TextSize = 20
+button.Parent = screenGui
 
-local Toggle = Tab:CreateToggle({
-   Name = "Aimbot V1",
-   CurrentValue = false,
-   Flag = "2", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
-   Callback = function(Value)
-getgenv().aimbotEnabled = Value  -- Mặc định tắt
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = button
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local camera = Workspace.CurrentCamera
-local player = Players.LocalPlayer
+local dragging = false
+local dragInput, dragStart, startPos
 
-local function getClosestNPCTarget()
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        return nil
-    end
-
-    local closestNPCHead = nil
-    local shortestDistance = math.huge
-
-    for _, npc in ipairs(Workspace:GetDescendants()) do
-        if npc:IsA("Model") and npc:FindFirstChild("Humanoid") and npc:FindFirstChild("Head") and not Players:GetPlayerFromCharacter(npc) then
-            local humanoid = npc.Humanoid
-            local head = npc.Head
-            local distance = (head.Position - character.HumanoidRootPart.Position).Magnitude
-
-            if humanoid.Health > 0 and distance < shortestDistance and distance <= 300 then
-                shortestDistance = distance
-                closestNPCHead = head
-            end
-        end
-    end
-
-    return closestNPCHead
+local function update(input)
+    local delta = input.Position - dragStart
+    button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
-RunService.RenderStepped:Connect(function()
-    if getgenv().aimbotEnabled then
-        local targetHead = getClosestNPCTarget()
-        if targetHead then
-            local headPos = targetHead.Position + Vector3.new(0, targetHead.Size.Y / 2, 0)
-            local camPos = camera.CFrame.Position
-            local newCFrame = CFrame.lookAt(camPos, headPos)
-            camera.CFrame = newCFrame
-        end
+button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = button.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
 
-   -- The function that takes place when the toggle is pressed
-   -- The variable (Value) is a boolean on whether the toggle is true or false
-   end,
+button.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        update(input)
+    end
+end)
+
+button.MouseButton1Click:Connect(function()
+    getgenv().ESPEnabled = not getgenv().ESPEnabled
+    if getgenv().ESPEnabled then
+        button.Text = "ESP Mob: ON"
+    else
+        button.Text = "ESP Mob: OFF"
+        clearESP()
+    end
+end)
+
+local Button = Tab:CreateButton({
+   Name = "Npc Hitbox",
+   Callback = function()
+-- Tạo GUI chính
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "Hitbox_GUI"
+screenGui.Parent = game:GetService("CoreGui")
+
+-- Tạo nút bấm
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 150, 0, 50)
+button.Position = UDim2.new(0.5, -75, 0.9, -25)
+button.BackgroundColor3 = Color3.new(0, 0, 0)
+button.TextColor3 = Color3.new(1, 1, 1)
+button.Text = "Hitbox: OFF"
+button.Font = Enum.Font.Fantasy
+button.TextScaled = true
+button.Parent = screenGui
+
+-- Bo tròn góc
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = button
+
+-- Biến kiểm soát Hitbox
+getgenv().hitboxEnabled = false
+
+-- Cập nhật Hitbox NPC
+local function updateNPCHitbox(npc)
+    if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("Humanoid") then
+        local hrp = npc.HumanoidRootPart
+        if getgenv().hitboxEnabled then
+            hrp.Size = Vector3.new(10, 10, 10)
+            hrp.Transparency = 0.85
+            hrp.CanCollide = false
+        else
+            hrp.Size = Vector3.new(2, 2, 1) -- Kích thước mặc định
+            hrp.Transparency = 0
+            hrp.CanCollide = true
+        end
+    end
+end
+
+-- Cập nhật tất cả NPC
+local function updateAllNPCsHitbox()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        updateNPCHitbox(obj)
+    end
+end
+
+-- Tự động cập nhật khi có NPC mới
+workspace.DescendantAdded:Connect(function(obj)
+    updateNPCHitbox(obj)
+end)
+
+-- Kiểm tra liên tục mỗi giây
+spawn(function()
+    while true do
+        if getgenv().hitboxEnabled then
+            updateAllNPCsHitbox()
+        end
+        wait(1)
+    end
+end)
+
+-- Xử lý khi bấm nút
+button.MouseButton1Click:Connect(function()
+    getgenv().hitboxEnabled = not getgenv().hitboxEnabled
+    button.Text = "Hitbox: " .. (getgenv().hitboxEnabled and "ON" or "OFF")
+    updateAllNPCsHitbox()
+end)
+
+local Button = Tab:CreateButton({
+   Name = "Aimbot V3",
+   Callback = function()
+--dead rails wall hack aimbot.
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+player.CameraMode = Enum.CameraMode.Classic
+local runService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local camera = workspace.CurrentCamera
+
+StarterGui:SetCore("SendNotification", {
+    Title = "Code by GioBolqvi", -- dont skid ðŸ™ðŸ’”
+    Text = "on Roblox",
+    Duration = 3
 })
 
-local Toggle = Tab:CreateToggle({
-   Name = "Aimbot V2",
-   CurrentValue = false,
-   Flag = "Toggle3", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
-   Callback = function(Value)
-getgenv().npcLockEnabled = Value  -- Mặc định tắt
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NPC_Lock_GUI"
+screenGui.Parent = game:GetService("CoreGui")
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local camera = workspace.CurrentCamera
-local player = Players.LocalPlayer
+local button = Instance.new("TextButton")
+button.Name = "NPC Lock: ON/OFF"
+button.Size = UDim2.new(0, 150, 0, 50)
+button.Position = UDim2.new(0.5, -75, 0.9, -25)
+button.BackgroundColor3 = Color3.new(0, 0, 0)
+button.TextColor3 = Color3.new(1, 1, 1)
+button.Text = "NPC Lock: OFF"
+button.Font = Enum.Font.Fantasy
+button.TextScaled = true
+button.TextSize = 20
+button.Parent = screenGui
+
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = button
+
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = button.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+button.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        update(input)
+    end
+end)
+
+local npcLock = false
+local lastTarget = nil
+local toggleLoop
+
+local function addPlayerHighlight()
+    if player.Character then
+        local highlight = player.Character:FindFirstChild("PlayerHighlightESP")
+        if not highlight then
+            highlight = Instance.new("Highlight")
+            highlight.Name = "PlayerHighlightESP"
+            highlight.FillColor = Color3.new(1, 1, 1)
+            highlight.OutlineColor = Color3.new(1, 1, 1)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.Parent = player.Character
+        end
+    end
+end
+
+local function removePlayerHighlight()
+    if player.Character and player.Character:FindFirstChild("PlayerHighlightESP") then
+        player.Character.PlayerHighlightESP:Destroy()
+    end
+end
 
 local function getClosestNPC()
     local closestNPC = nil
@@ -333,102 +524,63 @@ local function getClosestNPC()
     return closestNPC
 end
 
-spawn(function()
-    while true do
-        if getgenv().npcLockEnabled then
+button.MouseButton1Click:Connect(function()
+    npcLock = not npcLock
+    if npcLock then
+        button.Text = "NPC Lock: ON"
+        toggleLoop = runService.RenderStepped:Connect(function()
             local npc = getClosestNPC()
-            if npc and npc:FindFirstChild("Humanoid") and npc.Humanoid.Health > 0 then
-                camera.CameraSubject = npc.Humanoid
+            if npc and npc:FindFirstChild("Humanoid") then
+                local npcHumanoid = npc:FindFirstChild("Humanoid")
+                if npcHumanoid.Health > 0 then
+                    camera.CameraSubject = npcHumanoid
+                    lastTarget = npc
+                    addPlayerHighlight()
+                else
+                    StarterGui:SetCore("SendNotification", {
+                        Title = "Killed NPC",
+                        Text = npc.Name,
+                        Duration = 0.4
+                    })
+                    lastTarget = nil
+                    removePlayerHighlight()
+                    if player.Character and player.Character:FindFirstChild("Humanoid") then
+                        camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+                    end
+                end
             else
                 if player.Character and player.Character:FindFirstChild("Humanoid") then
                     camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
                 end
+                lastTarget = nil
+                removePlayerHighlight()
             end
+        end)
+    else
+        button.Text = "NPC Lock: OFF"
+        if toggleLoop then
+            toggleLoop:Disconnect()
+            toggleLoop = nil
         end
-        wait()  -- Giảm tải CPU
+        removePlayerHighlight()
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+        end
     end
 end)
-
-   -- The function that takes place when the toggle is pressed
-   -- The variable (Value) is a boolean on whether the toggle is true or false
+   -- The function that takes place when the button is pressed
    end,
 })
 
-local Toggle = Tab:CreateToggle({
-   Name = "Zombie Hitbox",
-   CurrentValue = false,
-   Flag = "Toggle4", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
-   Callback = function(Value)
-getgenv().hitboxEnabled = Value  -- Mặc định tắt
+   -- The function that takes place when the button is pressed
+   end,
+})
 
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
+   -- The function that takes place when the button is pressed
+   end,
+})
 
-local defaultHRPValues = {}
-
-local function updateNPCHitbox(npc)
-    if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("Humanoid") then
-        if Players:GetPlayerFromCharacter(npc) then return end  -- Bỏ qua người chơi
-
-        local humanoid = npc.Humanoid
-        local hrp = npc.HumanoidRootPart
-
-        if not defaultHRPValues[hrp] then
-            defaultHRPValues[hrp] = {Size = hrp.Size, Transparency = hrp.Transparency, CanCollide = hrp.CanCollide}
-        end
-
-        local function updateHitbox()
-            if getgenv().hitboxEnabled and humanoid.Health > 0 then
-                hrp.Size = Vector3.new(10, 10, 10)
-                hrp.Transparency = 0.85
-                hrp.CanCollide = false
-            else
-                local defaults = defaultHRPValues[hrp]
-                if defaults then
-                    hrp.Size = defaults.Size
-                    hrp.Transparency = defaults.Transparency
-                    hrp.CanCollide = defaults.CanCollide
-                end
-            end
-        end
-
-        humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-            if humanoid.Health <= 0 then
-                local defaults = defaultHRPValues[hrp]
-                if defaults then
-                    hrp.Size = defaults.Size
-                    hrp.Transparency = defaults.Transparency
-                    hrp.CanCollide = defaults.CanCollide
-                end
-            end
-        end)
-
-        updateHitbox()
-    end
-end
-
-local function updateAllNPCsHitbox()
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        updateNPCHitbox(obj)
-    end
-end
-
-Workspace.DescendantAdded:Connect(function(obj)
-    updateNPCHitbox(obj)
-end)
-
-spawn(function()
-    while true do
-        if getgenv().hitboxEnabled then
-            updateAllNPCsHitbox()
-        end
-        wait(1)  -- Kiểm tra mỗi giây, giảm tải CPU
-    end
-end)
-
-   -- The function that takes place when the toggle is pressed
-   -- The variable (Value) is a boolean on whether the toggle is true or false
+   -- The function that takes place when the button is pressed
    end,
 })
 
