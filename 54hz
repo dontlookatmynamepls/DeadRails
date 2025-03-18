@@ -1,0 +1,368 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Dead Rails || Flandre Hub Premium",
+   Icon = 125307995960610, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+   LoadingTitle = "Welcome to Flandre Hub",
+   LoadingSubtitle = "Script Make By 54hz",
+   Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil, -- Create a custom folder for your hub/game
+      FileName = "flandrehub"
+   },
+
+   Discord = {
+      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
+      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
+      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+   },
+
+   KeySystem = false, -- Set this to true to use our key system
+   KeySettings = {
+      Title = "Flandre Hub",
+      Subtitle = "Key Stytems",
+      Note = "to get key,chat to my bot in discord :nhm_roblox", -- Use this to tell the user how to get a key
+      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+      Key = {"b8d83ed2e0bbf2e4f45aa3c0166816dc"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+   }
+})
+
+Rayfield:Notify({
+   Title = "thanks for buy script",
+   Content = "discord:https://discord.gg/NtakBUPbkW",
+   Duration = 6.5,
+   Image = 4483362458,
+})
+
+local Tab = Window:CreateTab("Main🤔", 4483362458) -- Title, Image
+
+local Divider = Tab:CreateDivider()
+
+local Label = Tab:CreateLabel("Esp", 4483362458, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+
+local Toggle = Tab:CreateToggle({
+   Name = "Esp Npc",
+   CurrentValue = false,
+   Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+-- ESP Mob
+
+getgenv().ESPEnabled = Value -- Bật/tắt ESP
+
+local espObjects = {} -- Lưu danh sách ESP để xóa khi cần
+
+local function createESP(obj)
+    if obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
+        -- Xác định màu dựa trên tên mob
+        local dangerousMobs = {
+            "Vampire", "Werewolf", 
+            "RifleOutlaw", "ShotgunOutlaw", "RevolverOutlaw"
+        }
+        
+        local highlightColor, textColor
+
+        if table.find(dangerousMobs, obj.Name) then
+            highlightColor = Color3.fromRGB(255, 0, 0) -- Đỏ
+            textColor = Color3.fromRGB(255, 0, 0) -- Đỏ
+        elseif obj.Name == "Banker" then
+            highlightColor = Color3.fromRGB(255, 255, 0) -- Vàng
+            textColor = Color3.fromRGB(255, 255, 0) -- Vàng
+        else
+            highlightColor = Color3.fromRGB(0, 255, 0) -- Xanh lá
+            textColor = Color3.fromRGB(0, 255, 0) -- Xanh lá
+        end
+
+        -- Tạo highlight
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = obj
+        highlight.FillColor = highlightColor
+        highlight.OutlineColor = highlightColor
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+
+        -- Tạo BillboardGui để hiển thị tên mob
+        local billboard = Instance.new("BillboardGui")
+        billboard.Parent = obj.HumanoidRootPart
+        billboard.Adornee = obj.HumanoidRootPart
+        billboard.Size = UDim2.new(0, 100, 0, 25) -- Giảm kích thước của bảng hiển thị
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+
+        -- Tạo TextLabel để hiển thị tên mob
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Parent = billboard
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = obj.Name
+        textLabel.TextColor3 = textColor
+        textLabel.TextScaled = false
+        textLabel.TextSize = 14
+        textLabel.Font = Enum.Font.SourceSansBold
+
+        -- Lưu ESP để có thể xóa sau này
+        table.insert(espObjects, highlight)
+        table.insert(espObjects, billboard)
+    end
+end
+
+local function clearESP()
+    for _, esp in pairs(espObjects) do
+        if esp and esp.Parent then
+            esp:Destroy()
+        end
+    end
+    espObjects = {}
+end
+
+-- Chạy lặp ESP mỗi 0.2 giây
+task.spawn(function()
+    while task.wait(0.2) do
+        if not getgenv().ESPEnabled then
+            clearESP()
+            break
+        end
+
+        clearESP() -- Xóa ESP cũ trước khi tạo lại
+
+        -- Áp dụng ESP cho tất cả mob trong game
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+                createESP(obj)
+            end
+        end
+    end
+end)
+
+   -- The function that takes place when the toggle is pressed
+   -- The variable (Value) is a boolean on whether the toggle is true or false
+   end,
+})
+
+local Toggle = Tab:CreateToggle({
+   Name = "Esp item",
+   CurrentValue = false,
+   Flag = "Toggle2", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+-- ESP Item
+getgenv().ESPEnabled = Value -- Bật/tắt hiển thị
+
+local espObjects = {} -- Danh sách các đối tượng ESP để xóa khi cần
+
+local function createESP(obj)
+    -- Chỉ áp dụng nếu obj có "ObjectInfo" và không có "HumanoidRootPart"
+    if obj:FindFirstChild("ObjectInfo") and not obj:FindFirstChild("HumanoidRootPart") then
+        local highlightColor = Color3.fromRGB(255, 255, 255) -- Màu trắng
+        local textColor = Color3.fromRGB(255, 255, 255) -- Màu trắng
+
+        -- Tạo highlight
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = obj
+        highlight.FillColor = highlightColor
+        highlight.OutlineColor = highlightColor
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+
+        -- Tạo BillboardGui để hiển thị tên vật phẩm
+        local billboard = Instance.new("BillboardGui")
+        billboard.Parent = obj
+        billboard.Size = UDim2.new(0, 100, 0, 20) -- Giảm kích thước
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+
+        -- Tạo TextLabel để hiển thị tên vật phẩm
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Parent = billboard
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = obj.Name
+        textLabel.TextColor3 = textColor
+        textLabel.TextScaled = false
+        textLabel.TextSize = 10 -- Giảm cỡ chữ
+        textLabel.Font = Enum.Font.SourceSansBold
+
+        -- Gán BillboardGui vào một phần thích hợp (ví dụ: phần tử đầu tiên)
+        local adorneePart = obj:FindFirstChildWhichIsA("BasePart")
+        if adorneePart then
+            billboard.Adornee = adorneePart
+        else
+            billboard:Destroy() -- Nếu không tìm thấy phần thích hợp, xóa Billboard
+        end
+
+        -- Lưu ESP để có thể xóa sau này
+        table.insert(espObjects, highlight)
+        table.insert(espObjects, billboard)
+    end
+end
+
+local function clearESP()
+    for _, esp in pairs(espObjects) do
+        if esp and esp.Parent then
+            esp:Destroy()
+        end
+    end
+    espObjects = {}
+end
+
+-- Chạy lặp kiểm tra mỗi 0.2 giây
+task.spawn(function()
+    while task.wait(0.2) do
+        if not getgenv().ESPEnabled then
+            clearESP()
+            break
+        end
+
+        clearESP() -- Xóa highlight cũ trước khi tạo lại
+
+        -- Áp dụng cho tất cả các vật phẩm trong game
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") then
+                createESP(obj)
+            end
+        end
+    end
+end)
+
+   -- The function that takes place when the toggle is pressed
+   -- The variable (Value) is a boolean on whether the toggle is true or false
+   end,
+})
+
+local Label = Tab:CreateLabel("Misc", 4483362458, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+
+local Toggle = Tab:CreateToggle({
+   Name = "Aimbot V2",
+   CurrentValue = false,
+   Flag = "Toggle3", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+getgenv().npcLockEnabled = Value  -- Mặc định tắt
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local camera = workspace.CurrentCamera
+local player = Players.LocalPlayer
+
+local function getClosestNPC()
+    local closestNPC = nil
+    local closestDistance = math.huge
+
+    for _, object in ipairs(workspace:GetDescendants()) do
+        if object:IsA("Model") then
+            local humanoid = object:FindFirstChild("Humanoid") or object:FindFirstChildWhichIsA("Humanoid")
+            local hrp = object:FindFirstChild("HumanoidRootPart") or object.PrimaryPart
+            if humanoid and hrp and humanoid.Health > 0 and object.Name ~= "Horse" then
+                local isPlayer = false
+                for _, pl in ipairs(Players:GetPlayers()) do
+                    if pl.Character == object then
+                        isPlayer = true
+                        break
+                    end
+                end
+                if not isPlayer then
+                    local distance = (hrp.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestNPC = object
+                    end
+                end
+            end
+        end
+    end
+
+    return closestNPC
+end
+
+spawn(function()
+    while true do
+        if getgenv().npcLockEnabled then
+            local npc = getClosestNPC()
+            if npc and npc:FindFirstChild("Humanoid") and npc.Humanoid.Health > 0 then
+                camera.CameraSubject = npc.Humanoid
+            else
+                if player.Character and player.Character:FindFirstChild("Humanoid") then
+                    camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+                end
+            end
+        end
+        wait()  -- Giảm tải CPU
+    end
+end)
+
+   -- The function that takes place when the toggle is pressed
+   -- The variable (Value) is a boolean on whether the toggle is true or false
+   end,
+})
+
+local Toggle = Tab:CreateToggle({
+   Name = "Zombie Hitbox",
+   CurrentValue = false,
+   Flag = "Toggle4", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+getgenv().hitboxEnabled = Value  -- Mặc định tắt
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local defaultHRPValues = {}
+
+local function updateNPCHitbox(npc)
+    if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("Humanoid") then
+        if Players:GetPlayerFromCharacter(npc) then return end  -- Bỏ qua người chơi
+
+        local hrp = npc.HumanoidRootPart
+
+        if not defaultHRPValues[hrp] then
+            defaultHRPValues[hrp] = {Size = hrp.Size, Transparency = hrp.Transparency, CanCollide = hrp.CanCollide}
+        end
+
+        if getgenv().hitboxEnabled then
+            hrp.Size = Vector3.new(10, 10, 10)
+            hrp.Transparency = 0.85
+            hrp.CanCollide = false
+        else
+            local defaults = defaultHRPValues[hrp]
+            if defaults then
+                hrp.Size = defaults.Size
+                hrp.Transparency = defaults.Transparency
+                hrp.CanCollide = defaults.CanCollide
+            end
+        end
+    end
+end
+
+local function updateAllNPCsHitbox()
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        updateNPCHitbox(obj)
+    end
+end
+
+Workspace.DescendantAdded:Connect(function(obj)
+    updateNPCHitbox(obj)
+end)
+
+spawn(function()
+    while true do
+        if getgenv().hitboxEnabled then
+            updateAllNPCsHitbox()
+        end
+        wait(1)  -- Kiểm tra mỗi giây, giảm tải CPU
+    end
+end)
+
+   -- The function that takes place when the toggle is pressed
+   -- The variable (Value) is a boolean on whether the toggle is true or false
+   end,
+})
+
+local Button = Tab:CreateButton({
+   Name = "script làm bởi 54hz,script make by 54hz",
+   Callback = function()
+   -- The function that takes place when the button is pressed
+   end,
+})
