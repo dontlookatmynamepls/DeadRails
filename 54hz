@@ -62,14 +62,16 @@ buttonESP.TextColor3 = Color3.new(1, 1, 1)
 buttonESP.Text = "ESP Item: OFF"
 buttonESP.Font = Enum.Font.Fantasy
 buttonESP.TextScaled = true
+buttonESP.Active = true
+buttonESP.Draggable = true
 buttonESP.Parent = screenGui
 
 local uicorner = Instance.new("UICorner")
 uicorner.CornerRadius = UDim.new(0, 12)
 uicorner.Parent = buttonESP
 
--- Biến lưu trạng thái ESP
-getgenv().ESPEnabled = false
+-- Biến lưu trạng thái ESP Item
+getgenv().ESP_Item_Enabled = false
 local espObjects = {}
 
 local function clearESP()
@@ -118,7 +120,7 @@ local function createESP(obj)
 end
 
 local function updateESP()
-    while getgenv().ESPEnabled do
+    while getgenv().ESP_Item_Enabled do
         clearESP()
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Model") then
@@ -131,14 +133,15 @@ local function updateESP()
 end
 
 buttonESP.MouseButton1Click:Connect(function()
-    getgenv().ESPEnabled = not getgenv().ESPEnabled
-    buttonESP.Text = getgenv().ESPEnabled and "ESP Item: ON" or "ESP Item: OFF"
+    getgenv().ESP_Item_Enabled = not getgenv().ESP_Item_Enabled
+    buttonESP.Text = getgenv().ESP_Item_Enabled and "ESP Item: ON" or "ESP Item: OFF"
 
-    if getgenv().ESPEnabled then
+    if getgenv().ESP_Item_Enabled then
         task.spawn(updateESP)
     end
 end)
 
+   end,
 })
 
 local Button = Tab:CreateButton({
@@ -158,14 +161,16 @@ buttonESP.TextColor3 = Color3.new(1, 1, 1)
 buttonESP.Text = "ESP NPC: OFF"
 buttonESP.Font = Enum.Font.Fantasy
 buttonESP.TextScaled = true
+buttonESP.Active = true
+buttonESP.Draggable = true
 buttonESP.Parent = screenGui
 
 local uicorner = Instance.new("UICorner")
 uicorner.CornerRadius = UDim.new(0, 12)
 uicorner.Parent = buttonESP
 
--- Biến lưu trạng thái ESP
-getgenv().ESPEnabled = false
+-- Biến lưu trạng thái ESP NPC
+getgenv().ESP_NPC_Enabled = false
 local espObjects = {}
 
 local function clearESP()
@@ -226,7 +231,7 @@ local function createESP(obj)
 end
 
 local function updateESP()
-    while getgenv().ESPEnabled do
+    while getgenv().ESP_NPC_Enabled do
         clearESP()
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
@@ -239,14 +244,15 @@ local function updateESP()
 end
 
 buttonESP.MouseButton1Click:Connect(function()
-    getgenv().ESPEnabled = not getgenv().ESPEnabled
-    buttonESP.Text = getgenv().ESPEnabled and "ESP NPC: ON" or "ESP NPC: OFF"
+    getgenv().ESP_NPC_Enabled = not getgenv().ESP_NPC_Enabled
+    buttonESP.Text = getgenv().ESP_NPC_Enabled and "ESP NPC: ON" or "ESP NPC: OFF"
 
-    if getgenv().ESPEnabled then
+    if getgenv().ESP_NPC_Enabled then
         task.spawn(updateESP)
     end
 end)
 
+   end,
 })
 
 local Button = Tab:CreateButton({
@@ -266,6 +272,8 @@ buttonHitbox.TextColor3 = Color3.new(1, 1, 1)
 buttonHitbox.Text = "NPC HITBOX: OFF"
 buttonHitbox.Font = Enum.Font.Fantasy
 buttonHitbox.TextScaled = true
+buttonHitbox.Active = true
+buttonHitbox.Draggable = true
 buttonHitbox.Parent = screenGui
 
 local uicorner = Instance.new("UICorner")
@@ -275,18 +283,38 @@ uicorner.Parent = buttonHitbox
 -- Biến lưu trạng thái Hitbox
 getgenv().hitboxEnabled = false
 
+-- Kiểm tra đối tượng có phải là NPC không
+local function isNPC(character)
+    if character:IsA("Model") and character:FindFirstChild("Humanoid") and character:FindFirstChild("HumanoidRootPart") then
+        local player = game:GetService("Players"):GetPlayerFromCharacter(character)
+        return player == nil -- Chỉ là NPC nếu không phải người chơi
+    end
+    return false
+end
+
 -- Hàm cập nhật hitbox cho NPC
 local function updateNPCHitbox(npc)
-    if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("Humanoid") then
-        local hrp = npc.HumanoidRootPart
-        if getgenv().hitboxEnabled then
-            hrp.Size = Vector3.new(10, 10, 10) -- Mở rộng hitbox
-            hrp.Transparency = 0.85
-            hrp.CanCollide = false
-        else
-            hrp.Size = Vector3.new(2, 2, 1) -- Kích thước gốc
-            hrp.Transparency = 0
-            hrp.CanCollide = true
+    if isNPC(npc) then
+        local humanoid = npc:FindFirstChild("Humanoid")
+        local hrp = npc:FindFirstChild("HumanoidRootPart")
+
+        if humanoid and hrp then
+            if humanoid.Health > 0 then
+                if getgenv().hitboxEnabled then
+                    hrp.Size = Vector3.new(10, 10, 10) -- Mở rộng hitbox
+                    hrp.Transparency = 0.85
+                    hrp.CanCollide = false
+                else
+                    hrp.Size = Vector3.new(2, 2, 1) -- Kích thước gốc
+                    hrp.Transparency = 0
+                    hrp.CanCollide = true
+                end
+            else
+                -- Khi NPC chết, reset hitbox
+                hrp.Size = Vector3.new(2, 2, 1)
+                hrp.Transparency = 1 -- Ẩn hitbox hoàn toàn
+                hrp.CanCollide = false
+            end
         end
     end
 end
@@ -298,12 +326,25 @@ local function updateAllNPCsHitbox()
     end
 end
 
--- Khi có NPC mới xuất hiện, tự động cập nhật hitbox
+-- Theo dõi khi NPC mới xuất hiện
 workspace.DescendantAdded:Connect(function(obj)
+    task.wait(0.1) -- Chờ một chút để đảm bảo đối tượng được tạo hoàn chỉnh
     updateNPCHitbox(obj)
 end)
 
--- Liên tục kiểm tra và cập nhật hitbox
+-- Theo dõi khi NPC bị tiêu diệt
+workspace.DescendantRemoving:Connect(function(obj)
+    if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+        task.wait(0.1)
+        if obj:FindFirstChild("HumanoidRootPart") then
+            obj.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
+            obj.HumanoidRootPart.Transparency = 1 -- Ẩn hitbox khi NPC chết
+            obj.HumanoidRootPart.CanCollide = false
+        end
+    end
+end)
+
+-- Kiểm tra liên tục trạng thái NPC
 spawn(function()
     while true do
         if getgenv().hitboxEnabled then
@@ -320,10 +361,114 @@ buttonHitbox.MouseButton1Click:Connect(function()
     updateAllNPCsHitbox()
 end)
 
+   end,
 })
 
 local Button = Tab:CreateButton({
-   Name = "AIMBOT V3",
+   Name = "AIMBOT V1",
+   Callback = function()
+-- **Dịch vụ Roblox**
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local cam = Workspace.CurrentCamera
+local aimbotConnection
+local targetHead = nil
+local lastTargetUpdate = 0
+local targetUpdateInterval = 0.1
+local aimbotEnabled = false -- Mặc định là tắt
+
+-- **Tạo GUI**
+local screenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+screenGui.Name = "NPC_AIMBOT_GUI"
+
+local buttonAimbot = Instance.new("TextButton", screenGui)
+buttonAimbot.Name = "NPC AIMBOT: ON/OFF"
+buttonAimbot.Size = UDim2.new(0, 150, 0, 50)
+buttonAimbot.Position = UDim2.new(0.5, -75, 0.8, -25)
+buttonAimbot.BackgroundColor3 = Color3.new(0, 0, 0)
+buttonAimbot.TextColor3 = Color3.new(1, 1, 1)
+buttonAimbot.Text = "NPC AIMBOT: OFF"
+buttonAimbot.Font = Enum.Font.Fantasy
+buttonAimbot.TextScaled = true
+buttonAimbot.Active = true
+buttonAimbot.Draggable = true
+
+local uicorner = Instance.new("UICorner", buttonAimbot)
+uicorner.CornerRadius = UDim.new(0, 12)
+
+-- **Tìm NPC gần nhất**
+local function getClosestNPCTarget()
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+
+    local closestNPCHead = nil
+    local shortestDistance = math.huge
+
+    for _, npc in ipairs(Workspace:GetDescendants()) do
+        if npc:IsA("Model") and npc:FindFirstChild("Humanoid") and npc:FindFirstChild("Head") and not Players:GetPlayerFromCharacter(npc) then
+            local humanoid = npc.Humanoid
+            local head = npc.Head
+            local distance = (head.Position - character.HumanoidRootPart.Position).Magnitude
+
+            if humanoid.Health > 0 and distance < shortestDistance and distance <= 300 then
+                shortestDistance = distance
+                closestNPCHead = head
+            end
+        end
+    end
+
+    return closestNPCHead
+end
+
+-- **Bắt đầu Aimbot**
+local function startAimbot()
+    if aimbotConnection then return end -- Tránh chạy nhiều lần
+    aimbotConnection = RunService.RenderStepped:Connect(function()
+        local currentTime = tick()
+        if currentTime - lastTargetUpdate >= targetUpdateInterval then
+            targetHead = getClosestNPCTarget()
+            lastTargetUpdate = currentTime
+        end
+
+        if targetHead then
+            local headPos = targetHead.Position + Vector3.new(0, targetHead.Size.Y / 2, 0)
+            local camPos = cam.CFrame.Position
+            local direction = (headPos - camPos).unit
+            cam.CFrame = CFrame.lookAt(camPos, camPos + direction)
+        end
+    end)
+end
+
+-- **Dừng Aimbot**
+local function stopAimbot()
+    if aimbotConnection then
+        aimbotConnection:Disconnect()
+        aimbotConnection = nil
+    end
+end
+
+-- **Nút bật/tắt Aimbot**
+buttonAimbot.MouseButton1Click:Connect(function()
+    aimbotEnabled = not aimbotEnabled
+    buttonAimbot.Text = aimbotEnabled and "NPC AIMBOT: ON" or "NPC AIMBOT: OFF"
+
+    if aimbotEnabled then
+        startAimbot()
+    else
+        stopAimbot()
+    end
+end)
+
+   end,
+})
+
+local Button = Tab:CreateButton({
+   Name = "AIMBOT V2",
    Callback = function()
 --dead rails wall hack aimbot.
 local Players = game:GetService("Players")
@@ -493,6 +638,57 @@ button.MouseButton1Click:Connect(function()
     end
 end)
 
+   -- The function that takes place when the button is pressed
+   end,
+})
+
+local Button = Tab:CreateButton({
+   Name = "INSTANT BUTTON",
+   Callback = function()
+local function updatePrompt(prompt)
+    if prompt:IsA("ProximityPrompt") then
+        prompt.HoldDuration = 0
+    end
+end
+
+-- Cập nhật tất cả Prompt hiện có
+for _, obj in pairs(game:GetDescendants()) do
+    updatePrompt(obj)
+end
+
+-- Khi có Prompt mới xuất hiện, tự động chỉnh
+game.DescendantAdded:Connect(updatePrompt)
+
+-- Cứ mỗi 1 phút kiểm tra lại để đảm bảo không bị bỏ sót
+task.spawn(function()
+    while true do
+        for _, obj in pairs(game:GetDescendants()) do
+            updatePrompt(obj)
+        end
+        print("Đã cập nhật tất cả ProximityPrompt!")
+        task.wait(60)
+    end
+end)
+   -- The function that takes place when the button is pressed
+   end,
+})
+
+local Button = Tab:CreateButton({
+   Name = "THIRD PERSON CAM",
+   Callback = function()
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+player.CameraMode = Enum.CameraMode.Classic
+local runService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local camera = workspace.CurrentCamera
+   end,
+})
+
+local Button = Tab:CreateButton({
+   Name = "DEAD RAILS SCRIPT",
+   Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/DeadRails"))()
    -- The function that takes place when the button is pressed
    end,
 })
