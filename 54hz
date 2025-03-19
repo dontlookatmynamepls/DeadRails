@@ -686,6 +686,94 @@ local camera = workspace.CurrentCamera
 })
 
 local Button = Tab:CreateButton({
+   Name = "NO FOG",
+   Callback = function()
+local lighting = game:GetService("Lighting")
+
+while true do
+    -- Xóa Fog
+    lighting.FogEnd = 1000000
+    lighting.FogStart = 0
+
+    -- Xóa Atmosphere nếu có
+    if lighting:FindFirstChild("Atmosphere") then
+        lighting.Atmosphere.Density = 0
+        lighting.Atmosphere.Offset = 0
+        lighting.Atmosphere.Haze = 0
+        lighting.Atmosphere.Color = Color3.new(1, 1, 1)
+    end
+
+    print("NoFog Updated!")
+    task.wait(1) -- Cập nhật mỗi giây
+end
+
+   -- The function that takes place when the button is pressed
+   end,
+})
+
+local Button = Tab:CreateButton({
+   Name = "FULL BRIGHT",
+   Callback = function()
+local lighting = game:GetService("Lighting")
+
+while true do
+    -- Cấu hình FullBright
+    lighting.Brightness = 5
+    lighting.GlobalShadows = false
+    lighting.Ambient = Color3.new(1, 1, 1) -- Màu trắng sáng
+
+    print("FullBright Updated!")
+    task.wait(1) -- Cập nhật mỗi giây
+end
+
+   -- The function that takes place when the button is pressed
+   end,
+})
+
+local Toggle = Tab:CreateToggle({
+   Name = "NO CLIP",
+   CurrentValue = false,
+   Flag = "Toggle11", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+getgenv().Clip = Value 
+ wait(0.1) 
+ local function NoclipLoop() 
+ if Clip == true and game.Players.LocalPlayer.Character ~= nil then 
+ for _, c in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do 
+                                 if c:IsA("BasePart") and c.CanCollide == true and c.Name ~= floatName then 
+ c.CanCollide = false 
+ end 
+ end 
+ end 
+ end 
+ Noclipping = game:GetService("RunService").Stepped:Connect(NoclipLoop) 
+
+ if not getgenv().Clip then Noclipping:Disconnect() end
+   -- The function that takes place when the toggle is pressed
+   -- The variable (Value) is a boolean on whether the toggle is true or false
+   end,
+})
+
+local Toggle = Tab:CreateToggle({
+   Name = "INF JUMP",
+   CurrentValue = false,
+   Flag = "Toggle12", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+getgenv().infi = Value 
+ local Player = game.Players.LocalPlayer 
+ if infi ~= inf then 
+ inf = game.UserInputService.JumpRequest:Connect(function() 
+ if infi == false then inf:Disconnect() end 
+     Player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) 
+ wait() 
+ end) 
+ end 
+   -- The function that takes place when the toggle is pressed
+   -- The variable (Value) is a boolean on whether the toggle is true or false
+   end,
+})
+
+local Button = Tab:CreateButton({
    Name = "DEAD RAILS SCRIPT",
    Callback = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/DeadRails"))()
