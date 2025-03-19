@@ -774,6 +774,14 @@ getgenv().infi = Value
 })
 
 local Button = Tab:CreateButton({
+   Name = "DEAD RAILS SCRIPT",
+   Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/DeadRails"))()
+   -- The function that takes place when the button is pressed
+   end,
+})
+
+local Button = Tab:CreateButton({
    Name = "script làm bởi 54hz,script make by 54hz",
    Callback = function()
    -- The function that takes place when the button is pressed
