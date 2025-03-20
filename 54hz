@@ -1,9 +1,3 @@
-StarterGui:SetCore("SendNotification", {
-    Title = "script by 54hz", -- dont skid ðŸ™ðŸ’”
-    Text = "on Roblox",
-    Duration = 3
-})
-
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
