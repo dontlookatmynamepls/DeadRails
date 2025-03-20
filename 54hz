@@ -1,3 +1,12 @@
+local player = game.Players.LocalPlayer
+
+if player.Name == "whatdahell" or player.Name == "hoajldh456" or player.Name == "NOOD_Mouse" or player.Name == "hoang_huy1k9" or player.Name == "thaylam5A1" then
+    print("error")
+else
+    player:Kick("không thể bypass anti cheat!/cannot bypass anti cheat!")
+end
+
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
