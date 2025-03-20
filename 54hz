@@ -45,8 +45,16 @@ local Tab = Window:CreateTab("Main🤔", 4483362458) -- Title, Image
 
 local Divider = Tab:CreateDivider()
 
+local Section = Tab:CreateSection("SAFE:🟢")
+
+local Section = Tab:CreateSection("BUGGED🟡")
+
+local Section = Tab:CreateSection("UPDATE🟠")
+
+local Section = Tab:CreateSection("BANNED🔴")
+
 local Button = Tab:CreateButton({
-   Name = "ESP ITEM",
+   Name = "ESP ITEM🟢",
    Callback = function()
 -- Tạo GUI cho ESP Item
 local screenGui = game:GetService("CoreGui"):FindFirstChild("ESP_Item_GUI") or Instance.new("ScreenGui")
@@ -151,7 +159,7 @@ StarterGui:SetCore("SendNotification", {
 })
 
 local Button = Tab:CreateButton({
-   Name = "ESP NPC",
+   Name = "ESP NPC🟢",
    Callback = function()
 -- Tạo GUI cho ESP NPC
 local screenGui = game:GetService("CoreGui"):FindFirstChild("ESP_NPC_GUI") or Instance.new("ScreenGui")
@@ -268,7 +276,7 @@ StarterGui:SetCore("SendNotification", {
 })
 
 local Button = Tab:CreateButton({
-   Name = "NPC HITBOX",
+   Name = "NPC HITBOX🟢",
    Callback = function()
 -- Tạo GUI cho NPC Hitbox
 local screenGui = game:GetService("CoreGui"):FindFirstChild("NPC_HITBOX_GUI") or Instance.new("ScreenGui")
@@ -383,7 +391,7 @@ StarterGui:SetCore("SendNotification", {
 })
 
 local Button = Tab:CreateButton({
-   Name = "AIMBOT V1",
+   Name = "AIMBOT V1🔴",
    Callback = function()
 local fov = 100
 local RunService = game:GetService("RunService")
@@ -566,7 +574,7 @@ StarterGui:SetCore("SendNotification", {
 })
 
 local Button = Tab:CreateButton({
-   Name = "AIMBOT V2",
+   Name = "AIMBOT V2🟢",
    Callback = function()
 --dead rails wall hack aimbot.
 local Players = game:GetService("Players")
@@ -741,7 +749,7 @@ end)
 })
 
 local Button = Tab:CreateButton({
-   Name = "INSTANT BUTTON",
+   Name = "INSTANT BUTTON🟢",
    Callback = function()
 local function updatePrompt(prompt)
     if prompt:IsA("ProximityPrompt") then
@@ -784,7 +792,7 @@ local camera = workspace.CurrentCamera
 })
 
 local Button = Tab:CreateButton({
-   Name = "NO FOG",
+   Name = "NO FOG🟢",
    Callback = function()
 local lighting = game:GetService("Lighting")
 
@@ -810,7 +818,7 @@ end
 })
 
 local Button = Tab:CreateButton({
-   Name = "FULL BRIGHT",
+   Name = "FULL BRIGHT🟡",
    Callback = function()
 local lighting = game:GetService("Lighting")
 
@@ -829,7 +837,7 @@ end
 })
 
 local Toggle = Tab:CreateToggle({
-   Name = "NO CLIP",
+   Name = "NO CLIP🟢",
    CurrentValue = false,
    Flag = "Toggle11", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
    Callback = function(Value)
@@ -853,7 +861,7 @@ getgenv().Clip = Value
 })
 
 local Toggle = Tab:CreateToggle({
-   Name = "INF JUMP",
+   Name = "INF JUMP🟢",
    CurrentValue = false,
    Flag = "Toggle12", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
    Callback = function(Value)
@@ -872,7 +880,7 @@ getgenv().infi = Value
 })
 
 local Button = Tab:CreateButton({
-   Name = "DEAD RAILS SCRIPT",
+   Name = "DEAD RAILS SCRIPT🟠",
    Callback = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/DeadRails"))()
    -- The function that takes place when the button is pressed
