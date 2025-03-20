@@ -47,11 +47,11 @@ local Divider = Tab:CreateDivider()
 
 local Section = Tab:CreateSection("SAFE:🟢")
 
-local Section = Tab:CreateSection("BUGGED🟡")
+local Section = Tab:CreateSection("BUGGED;🟡")
 
-local Section = Tab:CreateSection("UPDATE🟠")
+local Section = Tab:CreateSection("UPDATE:🔵")
 
-local Section = Tab:CreateSection("BANNED🔴")
+local Section = Tab:CreateSection("BANNED:🔴")
 
 local Button = Tab:CreateButton({
    Name = "ESP ITEM🟢",
@@ -780,7 +780,7 @@ end)
 })
 
 local Button = Tab:CreateButton({
-   Name = "THIRD PERSON CAM",
+   Name = "THIRD PERSON CAM🟢",
    Callback = function()
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -880,7 +880,7 @@ getgenv().infi = Value
 })
 
 local Button = Tab:CreateButton({
-   Name = "DEAD RAILS SCRIPT🟠",
+   Name = "DEAD RAILS SCRIPT🔵",
    Callback = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/DeadRails"))()
    -- The function that takes place when the button is pressed
