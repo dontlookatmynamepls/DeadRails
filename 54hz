@@ -47,7 +47,7 @@ local Divider = Tab:CreateDivider()
 
 local Section = Tab:CreateSection("SAFE:🟢")
 
-local Section = Tab:CreateSection("BUGGED;🟡")
+local Section = Tab:CreateSection("BUGGED:🟡")
 
 local Section = Tab:CreateSection("UPDATE:🔵")
 
