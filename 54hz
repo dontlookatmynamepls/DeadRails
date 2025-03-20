@@ -367,101 +367,176 @@ end)
 local Button = Tab:CreateButton({
    Name = "AIMBOT V1",
    Callback = function()
--- **Dịch vụ Roblox**
-local Players = game:GetService("Players")
+-- made by yee_kunkun
+local fov = 50
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local Cam = workspace.CurrentCamera
+local Player = game:GetService("Players").LocalPlayer
 
-local player = Players.LocalPlayer
-local cam = Workspace.CurrentCamera
-local aimbotConnection
-local targetHead = nil
-local lastTargetUpdate = 0
-local targetUpdateInterval = 0.1
-local aimbotEnabled = false -- Mặc định là tắt
+local FOVring = Drawing.new("Circle")
+FOVring.Visible = false
+FOVring.Thickness = 2
+FOVring.Color = Color3.fromRGB(255, 0, 0)
+FOVring.Filled = false
+FOVring.Radius = fov
+FOVring.Position = Cam.ViewportSize / 2
 
--- **Tạo GUI**
-local screenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-screenGui.Name = "NPC_AIMBOT_GUI"
+local isAiming = false
+local validNPCs = {}
+local raycastParams = RaycastParams.new()
+raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
 
-local buttonAimbot = Instance.new("TextButton", screenGui)
-buttonAimbot.Name = "NPC AIMBOT: ON/OFF"
-buttonAimbot.Size = UDim2.new(0, 150, 0, 50)
-buttonAimbot.Position = UDim2.new(0.5, -75, 0.8, -25)
-buttonAimbot.BackgroundColor3 = Color3.new(0, 0, 0)
-buttonAimbot.TextColor3 = Color3.new(1, 1, 1)
-buttonAimbot.Text = "NPC AIMBOT: OFF"
-buttonAimbot.Font = Enum.Font.Fantasy
-buttonAimbot.TextScaled = true
-buttonAimbot.Active = true
-buttonAimbot.Draggable = true
+-- Tạo GUI giống ESP NPC
+local screenGui = game:GetService("CoreGui"):FindFirstChild("AIMBOT_GUI") or Instance.new("ScreenGui")
+screenGui.Name = "AIMBOT_GUI"
+screenGui.Parent = game:GetService("CoreGui")
 
-local uicorner = Instance.new("UICorner", buttonAimbot)
+local buttonAIMBOT = Instance.new("TextButton")
+buttonAIMBOT.Name = "AIMBOT_TOGGLE"
+buttonAIMBOT.Size = UDim2.new(0, 150, 0, 50)
+buttonAIMBOT.Position = UDim2.new(0.5, -75, 0.7, -25) -- Giữ nguyên vị trí so với ESP NPC
+buttonAIMBOT.BackgroundColor3 = Color3.new(0, 0, 0)
+buttonAIMBOT.TextColor3 = Color3.new(1, 1, 1)
+buttonAIMBOT.Text = "AIMBOT: OFF"
+buttonAIMBOT.Font = Enum.Font.Fantasy
+buttonAIMBOT.TextScaled = true
+buttonAIMBOT.Active = true
+buttonAIMBOT.Draggable = true
+buttonAIMBOT.Parent = screenGui
+
+local uicorner = Instance.new("UICorner")
 uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = buttonAIMBOT
 
--- **Tìm NPC gần nhất**
-local function getClosestNPCTarget()
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        return nil
+-- Cập nhật danh sách NPC
+local function isNPC(obj)
+    return obj:IsA("Model") 
+        and obj:FindFirstChild("Humanoid")
+        and obj.Humanoid.Health > 0
+        and obj:FindFirstChild("Head")
+        and obj:FindFirstChild("HumanoidRootPart")
+        and not game:GetService("Players"):GetPlayerFromCharacter(obj)
+end
+
+local function updateNPCs()
+    local tempTable = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if isNPC(obj) then
+            tempTable[obj] = true
+        end
     end
+    for i = #validNPCs, 1, -1 do
+        if not tempTable[validNPCs[i]] then
+            table.remove(validNPCs, i)
+        end
+    end
+    for obj in pairs(tempTable) do
+        if not table.find(validNPCs, obj) then
+            table.insert(validNPCs, obj)
+        end
+    end
+end
 
-    local closestNPCHead = nil
-    local shortestDistance = math.huge
+-- Dự đoán vị trí mục tiêu
+local function predictPos(target)
+    local rootPart = target:FindFirstChild("HumanoidRootPart")
+    local head = target:FindFirstChild("Head")
+    if not rootPart or not head then
+        return head and head.Position or rootPart and rootPart.Position
+    end
+    local velocity = rootPart.Velocity
+    local predictionTime = 0.02
+    local basePosition = rootPart.Position + velocity * predictionTime
+    local headOffset = head.Position - rootPart.Position
+    return basePosition + headOffset
+end
 
-    for _, npc in ipairs(Workspace:GetDescendants()) do
-        if npc:IsA("Model") and npc:FindFirstChild("Humanoid") and npc:FindFirstChild("Head") and not Players:GetPlayerFromCharacter(npc) then
-            local humanoid = npc.Humanoid
-            local head = npc.Head
-            local distance = (head.Position - character.HumanoidRootPart.Position).Magnitude
-
-            if humanoid.Health > 0 and distance < shortestDistance and distance <= 300 then
-                shortestDistance = distance
-                closestNPCHead = head
+-- Xác định mục tiêu gần nhất
+local function getTarget()
+    local nearest = nil
+    local minDistance = math.huge
+    local viewportCenter = Cam.ViewportSize / 2
+    raycastParams.FilterDescendantsInstances = {Player.Character}
+    for _, npc in ipairs(validNPCs) do
+        local predictedPos = predictPos(npc)
+        local screenPos, visible = Cam:WorldToViewportPoint(predictedPos)
+        if visible and screenPos.Z > 0 then
+            local ray = workspace:Raycast(
+                Cam.CFrame.Position,
+                (predictedPos - Cam.CFrame.Position).Unit * 1000,
+                raycastParams
+            )
+            if ray and ray.Instance:IsDescendantOf(npc) then
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - viewportCenter).Magnitude
+                if distance < minDistance and distance < fov then
+                    minDistance = distance
+                    nearest = npc
+                end
             end
         end
     end
-
-    return closestNPCHead
+    return nearest
 end
 
--- **Bắt đầu Aimbot**
-local function startAimbot()
-    if aimbotConnection then return end -- Tránh chạy nhiều lần
-    aimbotConnection = RunService.RenderStepped:Connect(function()
-        local currentTime = tick()
-        if currentTime - lastTargetUpdate >= targetUpdateInterval then
-            targetHead = getClosestNPCTarget()
-            lastTargetUpdate = currentTime
-        end
-
-        if targetHead then
-            local headPos = targetHead.Position + Vector3.new(0, targetHead.Size.Y / 2, 0)
-            local camPos = cam.CFrame.Position
-            local direction = (headPos - camPos).unit
-            cam.CFrame = CFrame.lookAt(camPos, camPos + direction)
-        end
-    end)
+-- Nhắm vào mục tiêu
+local function aim(targetPosition)
+    local currentCF = Cam.CFrame
+    local targetDirection = (targetPosition - currentCF.Position).Unit
+    local smoothFactor = 0.581
+    local newLookVector = currentCF.LookVector:Lerp(targetDirection, smoothFactor)
+    Cam.CFrame = CFrame.new(currentCF.Position, currentCF.Position + newLookVector)
 end
 
--- **Dừng Aimbot**
-local function stopAimbot()
-    if aimbotConnection then
-        aimbotConnection:Disconnect()
-        aimbotConnection = nil
+-- Cập nhật mỗi khung hình
+local heartbeat = RunService.Heartbeat
+local lastUpdate = 0
+local UPDATE_INTERVAL = 0.4
+
+heartbeat:Connect(function(dt)
+    lastUpdate = lastUpdate + dt
+    if lastUpdate >= UPDATE_INTERVAL then
+        updateNPCs()
+        lastUpdate = 0
     end
-end
-
--- **Nút bật/tắt Aimbot**
-buttonAimbot.MouseButton1Click:Connect(function()
-    aimbotEnabled = not aimbotEnabled
-    buttonAimbot.Text = aimbotEnabled and "NPC AIMBOT: ON" or "NPC AIMBOT: OFF"
-
-    if aimbotEnabled then
-        startAimbot()
-    else
-        stopAimbot()
+    if isAiming then
+        local target = getTarget()
+        if target then
+            local predictedPosition = predictPos(target)
+            aim(predictedPosition)
+        end
     end
+end)
+
+-- Chức năng bật/tắt AIMBOT
+buttonAIMBOT.MouseButton1Click:Connect(function()
+    isAiming = not isAiming
+    FOVring.Visible = isAiming
+    buttonAIMBOT.Text = isAiming and "AIMBOT: ON" or "AIMBOT: OFF"
+    buttonAIMBOT.TextColor3 = isAiming and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 50, 50)
+end)
+
+-- Cập nhật danh sách NPC khi có sự thay đổi
+workspace.DescendantAdded:Connect(function(descendant)
+    if isNPC(descendant) then
+        table.insert(validNPCs, descendant)
+    end
+end)
+
+workspace.DescendantRemoved:Connect(function(descendant)
+    if isNPC(descendant) then
+        for i = #validNPCs, 1, -1 do
+            if validNPCs[i] == descendant then
+                table.remove(validNPCs, i)
+                break
+            end
+        end
+    end
+end)
+
+game:GetService("Players").PlayerRemoving:Connect(function()
+    FOVring:Remove()
+    screenGui:Destroy()
 end)
 
    end,
